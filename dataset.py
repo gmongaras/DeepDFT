@@ -34,8 +34,8 @@ def _cell_heights(cell_object):
 
 def rotating_pool_worker(dataset, rng, queue):
     while True:
-        for index in rng.permutation(len(dataset)).tolist():
-            queue.put(dataset[index])
+        for index in rng.permutation(len(dataset.dataset)).tolist():
+            queue.put(dataset.dataset[index])
 
 
 def transfer_thread(queue: multiprocessing.Queue, datalist: list):
@@ -57,9 +57,9 @@ class RotatingPoolData(torch.utils.data.Dataset):
         self.rng = np.random.default_rng()
         logging.debug("Filling rotating data pool of size %d" % pool_size)
         self.data_pool = [
-            self.parent_data[i]
+            self.parent_data.dataset[i]
             for i in self.rng.integers(
-                0, high=len(self.parent_data), size=self.pool_size, endpoint=False
+                0, high=len(self.parent_data.dataset), size=self.pool_size, endpoint=False
             ).tolist()
         ]
         self.loader_queue = multiprocessing.Queue(2)
@@ -101,7 +101,7 @@ class BufferData(torch.utils.data.Dataset):
 class DensityData(torch.utils.data.Dataset):
     def __init__(self, datapath, **kwargs):
         super().__init__(**kwargs)
-        if os.path.isfile(datapath) and datapath.endswith(".tar"):
+        if os.path.isfile(datapath):# and datapath.endswith(".tar"):
             self.data = DensityDataTar(datapath)
         elif os.path.isdir(datapath):
             self.data = DensityDataDir(datapath)

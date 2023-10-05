@@ -1,4 +1,4 @@
-numpy
-asap3
-ase
-torch
+numpy==1.23.5
+asap3==3.13.1
+ase==3.22.1
+torch==2.1.0.dev20230619+cu118

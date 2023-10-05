@@ -144,7 +144,10 @@ def eval_model(model, dataloader, device):
         running_count = torch.tensor(0., device=device)
         for batch in dataloader:
             device_batch = {
-                k: v.to(device=device, non_blocking=True) for k, v in batch.items()
+                k: torch.tensor(v).to(device=device, non_blocking=True) if type(v) == np.ndarray \
+                    else v.to(device=device, non_blocking=True) if type(v) == torch.Tensor else \
+                    v
+                    for k, v in batch.items()
             }
             outputs = model(device_batch)
             targets = device_batch["probe_target"]
@@ -221,6 +224,7 @@ def main():
     # Split data into train and validation sets
     datasplits = split_data(densitydata, args)
     datasplits["train"] = dataset.RotatingPoolData(datasplits["train"], 20)
+    datasplits["validation"] = dataset.RotatingPoolData(datasplits["validation"], 20)
 
     if args.ignore_pbc and args.force_pbc:
         raise ValueError("ignore_pbc and force_pbc are mutually exclusive and can't both be set at the same time")
@@ -242,11 +246,14 @@ def main():
     val_loader = torch.utils.data.DataLoader(
         datasplits["validation"],
         2,
+        sampler=torch.utils.data.SequentialSampler(datasplits["validation"]),
+        # sampler=torch.utils.data.RandomSampler(datasplits["validation"]),
         collate_fn=dataset.CollateFuncRandomSample(args.cutoff, 5000, pin_memory=False, set_pbc_to=set_pbc),
         num_workers=0,
     )
     logging.info("Preloading validation batch")
     val_loader = [b for b in val_loader]
+    
 
     # Initialise model
     device = torch.device(args.device)
